@@ -1,0 +1,38 @@
+Package: MsBackendMzPeak
+Title: MS Data Backend for mzPeak Data Files
+Version: 0.97.0
+Authors@R:
+    c(person(given = "Gabriele", family = "Tomè",
+             email = "gabriele.tome@eurac.edu",
+             role = c("aut"),
+             comment = c(ORCID = "0000-0002-3976-6068",
+             fnd = "MetaRbolomics4Galaxy project (CUP: D53C25001030003) co-funded by the Autonomous Province of Bolzano under the Joint Projects South Tyrol–Germany 2025 program.")),
+      person(given = "Johannes", family = "Rainer",
+             email = "Johannes.Rainer@eurac.edu",
+             role = c("aut", "cre"),
+             comment = c(ORCID = "0000-0002-6977-7147")))
+Description: The HUPO-PSI mzPeak format is an upcoming, cloud enabled, file
+             format for mass spectrometry (MS) data, designed as a successor
+             of the current standard open file format mzML. The Spectra
+             R package represents the core infrastructure for MS data analysis
+             in Biocondcutor. The MzBackendMzPeak package provides data
+             backends for mzPeak MS data files adding support for these to the
+             Spectra package.
+Depends:
+    R (>= 4.6.0),
+    Spectra (>= 1.15.12)
+Imports:
+    ProtGenerics,
+    S4Vectors,
+    methods
+Suggests:
+    testthat
+Remotes:
+    HUPO-PSI/mzpeak/R/mzpeak
+License: Artistic-2.0
+Encoding: UTF-8
+BugReports: https://github.com/RforMassSpectrometry/MsBackendMzPeak/issues
+URL: https://github.com/RforMassSpectrometry/MsBackendMzPeak
+biocViews: Infrastructure, MassSpectrometry, Metabolomics, DataImport, Proteomics
+Roxygen: list(markdown=TRUE)
+RoxygenNote: 7.3.3

@@ -1,6 +1,7 @@
 # mzPeak file format support for `Spectra`
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![codecov](https://codecov.io/gh/rformassspectrometry/MsBackendMzPeak/graph/badge.svg?token=CUbNayC9O2)](https://codecov.io/gh/rformassspectrometry/MsBackendMzPeak)
 [![license](https://img.shields.io/badge/license-Artistic--2.0-brightgreen.svg)](https://opensource.org/licenses/Artistic-2.0)
 
 This repository provides a *backend* for
