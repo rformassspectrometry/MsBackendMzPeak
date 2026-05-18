@@ -5,14 +5,28 @@
 \alias{MsBackendMzPeak}
 \alias{MsBackendMzPeak-class}
 \alias{show,MsBackendMzPeak-method}
+\alias{[,MsBackendMzPeak-method}
 \title{\code{Spectra} MS backend to read data from files in mzPeak format}
 \usage{
 MsBackendMzPeak()
 
 \S4method{show}{MsBackendMzPeak}(object)
+
+\S4method{[}{MsBackendMzPeak}(x, i, j, ..., drop = FALSE)
 }
 \arguments{
 \item{object}{An \code{MsBackendMzPeak} object.}
+
+\item{x}{AN \code{MsBackendMzPeak} object.}
+
+\item{i}{For \code{[}: \code{integer} or \code{logical} defining to which spectra the data
+should be subset.}
+
+\item{j}{For \code{[}: ignored.}
+
+\item{...}{additional arguments.}
+
+\item{drop}{For \code{[}: ignored.}
 }
 \description{
 The \code{MsBackendMzPeak} is an implementation of the \code{\link[Spectra:MsBackend]{Spectra::MsBackend()}}
@@ -38,8 +52,12 @@ New \code{MsBackendMzPeak} backend objects can be created with the
 
 \section{Subset, merge and filter data}{
 
-
-Subset...
+\itemize{
+\item \code{[}: subset a \code{MsBackendMzPeak} to the provided spectra (parameter \code{i}).
+Internally, this will subset and re-order the cached data as well as the
+indices and mzPeak files. The data in the original mzPeak files is not
+affected.
+}
 }
 
 \section{Data access}{

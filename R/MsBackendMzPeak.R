@@ -33,13 +33,27 @@
 #'
 #' @section Subset, merge and filter data:
 #'
-#' Subset...
+#' - `[`: subset a `MsBackendMzPeak` to the provided spectra (parameter `i`).
+#'   Internally, this will subset and re-order the cached data as well as the
+#'   indices and mzPeak files. The data in the original mzPeak files is not
+#'   affected.
 #'
 #' @section Data access:
 #'
 #' Data access functionality.
 #'
+#' @param drop For `[`: ignored.
+#'
+#' @param i For `[`: `integer` or `logical` defining to which spectra the data
+#'     should be subset.
+#'
+#' @param j For `[`: ignored.
+#'
 #' @param object An `MsBackendMzPeak` object.
+#'
+#' @param x AN `MsBackendMzPeak` object.
+#'
+#' @param ... additional arguments.
 #'
 #' @author Johannes Rainer, Gabriele Tomè
 #'
@@ -55,11 +69,13 @@ setClass(
     "MsBackendMzPeak",
     contains = "MsBackendCached",
     slots = c(
-        mzPeakFile = "character",
-        spectraIds = "integer"),
+        files = "character", # mzPeak file(s)
+        sidx = "integer",    # spectrum index
+        fidx = "integer"),   # file index for each spectrum index
     prototype = prototype(
-        mzPeakFile = character(),
-        spectraIds = integer(),
+        files = character(),
+        sidx = integer(),
+        fidx = integer(),
         readonly = TRUE, version = "0.1"))
 
 #' @importFrom methods validObject
@@ -67,9 +83,11 @@ setClass(
 #' @noRd
 setValidity("MsBackendMzPeak", function(object) {
     msg <- NULL
-    if (length(object@spectraIds) != object@nspectra)
-        msg <- paste0("Number of spectra IDs does not match the number ",
-                      "of spectra")
+    if (length(object@sidx) != length(object@fidx))
+        msg <- paste0("spectrum index does not match file index")
+    if (length(object@sidx) != object@nspectra)
+        msg <- c(msg, paste0("Number of spectra IDs does not match the number ",
+                             "of spectra"))
     if (is.null(msg)) TRUE
     else msg
 })
@@ -83,12 +101,25 @@ setValidity("MsBackendMzPeak", function(object) {
 #' @rdname MsBackendMzPeak
 setMethod("show", "MsBackendMzPeak", function(object) {
     callNextMethod()
-    if (l <- length(object@mzPeakFile)) {
+    if (l <- length(object@files)) {
         to <- min(3, l)
-        cat("\nfile(s):\n ", paste(basename(object@mzPeakFile[seq_len(to)]),
+        cat("\nfile(s):\n ", paste(basename(object@files[seq_len(to)]),
                                   collapse = "\n "),
             "\n", sep = "")
         if (l > 3)
             cat(" ...", l - 3, "more files\n")
     }
+})
+
+#' @rdname MsBackendMzPeak
+#'
+#' @importFrom methods slot<-
+setMethod("[", "MsBackendMzPeak", function(x, i, j, ..., drop = FALSE) {
+    x <- callNextMethod()                   # subset cache (parent object)
+    slot(x, "sidx", check = FALSE) <- x@sidx[i]
+    fidx <- x@fidx[i]
+    keep_files <- unique(fidx)
+    slot(x, "files", check = FALSE) <- x@files[keep_files]
+    slot(x, "fidx", check = FALSE) <- base::match(fidx, keep_files)
+    x
 })

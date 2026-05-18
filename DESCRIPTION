@@ -22,7 +22,6 @@ Depends:
     R (>= 4.6.0),
     Spectra (>= 1.15.12)
 Imports:
-    ProtGenerics,
     S4Vectors,
     methods
 Suggests:
@@ -35,4 +34,4 @@ BugReports: https://github.com/RforMassSpectrometry/MsBackendMzPeak/issues
 URL: https://github.com/RforMassSpectrometry/MsBackendMzPeak
 biocViews: Infrastructure, MassSpectrometry, Metabolomics, DataImport, Proteomics
 Roxygen: list(markdown=TRUE)
-RoxygenNote: 7.3.3
+Config/roxygen2/version: 8.0.0
