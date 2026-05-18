@@ -63,7 +63,10 @@ from the original mzPeak files on-the-fly.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">MsBackendMzPeak</span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S4 method for class 'MsBackendMzPeak'</span></span>
-<span><span class="fu">show</span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">show</span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S4 method for class 'MsBackendMzPeak'</span></span>
+<span><span class="va">x</span><span class="op">[</span><span class="va">i</span>, <span class="va">j</span>, <span class="va">...</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -72,6 +75,27 @@ from the original mzPeak files on-the-fly.</p>
 
 <dl><dt id="arg-object">object<a class="anchor" aria-label="anchor" href="#arg-object"></a></dt>
 <dd><p>An <code>MsBackendMzPeak</code> object.</p></dd>
+
+
+<dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
+<dd><p>AN <code>MsBackendMzPeak</code> object.</p></dd>
+
+
+<dt id="arg-i">i<a class="anchor" aria-label="anchor" href="#arg-i"></a></dt>
+<dd><p>For <code>[</code>: <code>integer</code> or <code>logical</code> defining to which spectra the data
+should be subset.</p></dd>
+
+
+<dt id="arg-j">j<a class="anchor" aria-label="anchor" href="#arg-j"></a></dt>
+<dd><p>For <code>[</code>: ignored.</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>additional arguments.</p></dd>
+
+
+<dt id="arg-drop">drop<a class="anchor" aria-label="anchor" href="#arg-drop"></a></dt>
+<dd><p>For <code>[</code>: ignored.</p></dd>
 
 </dl></div>
     <div id="details">
@@ -93,9 +117,11 @@ accessing data in mzPeak files.</p>
     <h2>Subset, merge and filter data</h2>
 
 
-
-<p>Subset...</p>
-    </div>
+<ul><li><p><code>[</code>: subset a <code>MsBackendMzPeak</code> to the provided spectra (parameter <code>i</code>).
+Internally, this will subset and re-order the cached data as well as the
+indices and mzPeak files. The data in the original mzPeak files is not
+affected.</p></li>
+</ul></div>
     <div id="data-access">
     <h2>Data access</h2>
 
