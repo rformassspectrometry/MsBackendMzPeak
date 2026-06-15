@@ -12,3 +12,9 @@ README.Rmd
 logo.png
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^\.vscode$
+^src/\.cargo$
+^src/rust/vendor$
+^src/rust/target$
+^src/Makevars$
+^src/Makevars\.win$

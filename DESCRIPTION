@@ -1,6 +1,6 @@
 Package: MsBackendMzPeak
 Title: MS Data Backend for mzPeak Data Files
-Version: 0.97.0
+Version: 0.97.1
 Authors@R:
     c(person(given = "Gabriele", family = "Tomè",
              email = "gabriele.tome@eurac.edu",
@@ -20,7 +20,8 @@ Description: The HUPO-PSI mzPeak format is an upcoming, cloud enabled, file
              Spectra package.
 Depends:
     R (>= 4.6.0),
-    Spectra (>= 1.15.12)
+    Spectra (>= 1.15.12),
+    rextendr
 Imports:
     S4Vectors,
     methods
@@ -35,3 +36,5 @@ URL: https://github.com/RforMassSpectrometry/MsBackendMzPeak
 biocViews: Infrastructure, MassSpectrometry, Metabolomics, DataImport, Proteomics
 Roxygen: list(markdown=TRUE)
 Config/roxygen2/version: 8.0.0
+Config/rextendr/version: 0.5.0
+SystemRequirements: Cargo (Rust's package manager), rustc >= 1.65.0, xz

@@ -32,3 +32,8 @@ local_data
 *.seed
 *.settings
 *.tm_properties
+src/rust/vendor
+src/rust/target
+src/rust/src/target
+src/Makevars
+src/Makevars.win
