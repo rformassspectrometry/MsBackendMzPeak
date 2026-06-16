@@ -35,5 +35,6 @@ local_data
 src/rust/vendor
 src/rust/target
 src/rust/src/target
+src/.cargo
 src/Makevars
 src/Makevars.win

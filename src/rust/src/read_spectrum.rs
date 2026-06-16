@@ -1,9 +1,18 @@
 use extendr_api::prelude::*;
+use std::{path};
 use mzdata::prelude::*;
 use mzpeak_prototyping::MzPeakReader;
-use std::path::PathBuf;
 
-pub fn read_spectrum(path: &PathBuf, index: usize) -> extendr_api::Result<Robj> {
+/// Read an the spectrum of a mzPeak archive.
+///
+/// @param filename `character(1)` Path to the mzPeak archive.
+///
+/// @param index `integer` with the index of the spectrum to extract.
+///
+/// @noRd
+pub fn read_spectrum(filename: String, index: usize) ->
+                     extendr_api::Result<Robj> {
+    let path = path::PathBuf::from(filename);
     let mut reader = MzPeakReader::new(path)
         .map_err(|e| extendr_api::Error::from(e.to_string()))?;
 

@@ -5,11 +5,6 @@
 #' @useDynLib MsBackendMzPeak, .registration = TRUE
 NULL
 
-#' Basic function to try read a small mzpeak.
-#'
-#' @noRd
-mz_peak_reader_test <- function() .Call(wrap__mz_peak_reader_test)
-
 #' Read an mzPeak archive and return the number of spectra and total number of
 #' points.
 #'
@@ -19,15 +14,26 @@ mz_peak_reader_test <- function() .Call(wrap__mz_peak_reader_test)
 #'     or 32 bytes).
 #'
 #' @noRd
-mz_peak_load <- function(filename, encryption_key) .Call(wrap__mz_peak_load, filename, encryption_key)
+mzpeak_info <- function(filename, encryption_key) .Call(wrap__mzpeak_info, filename, encryption_key)
+
+#' Function to read description field of a mzPeak file.
+#'
+#' @param filename Path to the mzPeak archive.
+#'
+#' @param encryption_key `character(1)` Optional AES decryption key (16, 24,
+#'     or 32 bytes).
+#'
+#' @noRd
+mzpeak_read_desc <- function(filename, encryption_key) .Call(wrap__mzpeak_read_desc, filename, encryption_key)
 
 #' Read an the spectrum of a mzPeak archive.
 #'
 #' @param filename `character(1)` Path to the mzPeak archive.
 #'
-#' @param index `integer` with the index of the spectrum to extract.
+#' @param encryption_key `character(1)` Optional AES decryption key (16, 24,
+#'     or 32 bytes).
 #'
 #' @noRd
-mz_peak_read_spectrum <- function(path, index) .Call(wrap__mz_peak_read_spectrum, path, index)
+mzpeak_read_spectrum <- function(filename, encryption_key) .Call(wrap__mzpeak_read_spectrum, filename, encryption_key)
 
 # nolint end

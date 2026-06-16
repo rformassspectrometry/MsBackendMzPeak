@@ -1,21 +1,10 @@
 mod read;
 mod read_spectrum;
+mod read_desc;
 
 use extendr_api::prelude::*;
 use mzpeak_prototyping::MzPeakReader;
 use mzdata::prelude::*;
-
-/// Basic function to try read a small mzpeak.
-///
-/// @noRd
-#[extendr]
-fn mz_peak_reader_test() -> extendr_api::Result<()> {
-    let mut reader = MzPeakReader::new("/home/gabriele/Desktop/EURAC/MetaRbolomics4Galaxy/mzPeak/small.mzpeak")
-        .map_err(|e| extendr_api::Error::from(e.to_string()))?;
-    let spec = reader.get_spectrum_by_index(2).unwrap();
-    rprintln!("{:?}", spec.description());
-    Ok(())
-}
 
 /// Read an mzPeak archive and return the number of spectra and total number of
 /// points.
@@ -27,22 +16,49 @@ fn mz_peak_reader_test() -> extendr_api::Result<()> {
 ///
 /// @noRd
 #[extendr]
-fn mz_peak_load(filename: String, encryption_key: Option<String>) ->
+fn mzpeak_info(filename: String, encryption_key: Option<String>) ->
                 extendr_api::Result<Robj> {
-    read::load_mzpeak(filename, encryption_key)
+    read::info(filename, encryption_key)
+}
+
+/// Function to read description field of a mzPeak file.
+///
+/// @param filename Path to the mzPeak archive.
+///
+/// @param encryption_key `character(1)` Optional AES decryption key (16, 24,
+///     or 32 bytes).
+///
+/// @noRd
+#[extendr]
+fn mzpeak_read_desc(filename: String, encryption_key: Option<String>) ->
+                     extendr_api::Result<Robj> {
+    let n_spectra = read::mzpeak_n_spectra(filename.clone(),
+                                    encryption_key).unwrap();
+    let mut descriptions = Vec::with_capacity(n_spectra);
+    for i in 0..n_spectra {
+        descriptions.push(read_desc::read_desc(filename.clone(), i)?);
+    }
+    Ok(List::from_values(descriptions).into_robj())
 }
 
 /// Read an the spectrum of a mzPeak archive.
 ///
 /// @param filename `character(1)` Path to the mzPeak archive.
 ///
-/// @param index `integer` with the index of the spectrum to extract.
+/// @param encryption_key `character(1)` Optional AES decryption key (16, 24,
+///     or 32 bytes).
 ///
 /// @noRd
 #[extendr]
-fn mz_peak_read_spectrum(path: String, index: usize) ->
+fn mzpeak_read_spectrum(filename: String, encryption_key: Option<String>) ->
                          extendr_api::Result<Robj> {
-    read_spectrum::read_spectrum(&std::path::PathBuf::from(path), index)
+    let n_spectra = read::mzpeak_n_spectra(filename.clone(),
+                                    encryption_key).unwrap();
+    let mut spectrum = Vec::with_capacity(n_spectra);
+    for i in 0..n_spectra {
+        spectrum.push(read_spectrum::read_spectrum(filename.clone(), i)?);
+    }
+    Ok(List::from_values(spectrum).into_robj())
 }
 
 // Macro to generate exports.
@@ -50,7 +66,7 @@ fn mz_peak_read_spectrum(path: String, index: usize) ->
 // See corresponding C code in `entrypoint.c`.
 extendr_module! {
     mod MsBackendMzPeak;
-    fn mz_peak_reader_test;
-    fn mz_peak_load;
-    fn mz_peak_read_spectrum;
+    fn mzpeak_info;
+    fn mzpeak_read_desc;
+    fn mzpeak_read_spectrum;
 }
