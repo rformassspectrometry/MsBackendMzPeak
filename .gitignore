@@ -38,3 +38,4 @@ src/rust/src/target
 src/.cargo
 src/Makevars
 src/Makevars.win
+.vscode
