@@ -41,5 +41,5 @@ pub fn read_spectrum(filename: String, index: usize) ->
     let mz_vec: Vec<f64> = mzs.iter().copied().collect();
     let int_vec: Vec<f64> = ints.iter().map(|x| *x as f64).collect();
 
-    Ok(list!(mz = mz_vec, intensity = int_vec).into_robj())
+    Ok(data_frame!(mz = mz_vec, intensity = int_vec).into_robj())
 }

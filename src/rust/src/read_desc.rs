@@ -208,7 +208,7 @@ impl From<RSpectrumDescription> for Robj {
 ///
 /// @param filename Path to the mzPeak archive.
 ///
-/// @param index `integer` with the index of the spectrum to extract.
+/// @param index `integer` with the index of the SpectrumDescription to extract.
 ///
 /// @noRd
 pub fn read_desc(filename: String, index: usize) -> extendr_api::Result<Robj> {

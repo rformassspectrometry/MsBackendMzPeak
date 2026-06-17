@@ -5,14 +5,14 @@
 \alias{MsBackendMzPeak}
 \alias{MsBackendMzPeak-class}
 \alias{show,MsBackendMzPeak-method}
-\alias{[,MsBackendMzPeak,ANY,ANY,ANY-method}
+\alias{[,MsBackendMzPeak-method}
 \title{\code{Spectra} MS backend to read data from files in mzPeak format}
 \usage{
 MsBackendMzPeak()
 
 \S4method{show}{MsBackendMzPeak}(object)
 
-\S4method{[}{MsBackendMzPeak,ANY,ANY,ANY}(x, i, j, ..., drop = FALSE)
+\S4method{[}{MsBackendMzPeak}(x, i, j, ..., drop = FALSE)
 }
 \arguments{
 \item{object}{An \code{MsBackendMzPeak} object.}
