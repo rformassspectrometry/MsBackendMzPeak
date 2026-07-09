@@ -1,13 +1,11 @@
-use extendr_api::prelude::*;
-use std::{path};
+use mzpeak_prototyping::MzPeakReader;
 use mzdata::params::{Param, ParamValue};
 use mzdata::spectrum::{
     Acquisition, Activation, IsolationWindow, Precursor, ScanEvent, ScanWindow,
     SelectedIon, SpectrumDescription,
 };
-use mzdata::prelude::*;
-use mzpeak_prototyping::MzPeakReader;
-
+use std::path::PathBuf;
+use extendr_api::prelude::*;
 /// RParam
 struct RParam<'a>(&'a Param);
 
@@ -179,7 +177,7 @@ impl<'a> From<RPrecursor<'a>> for Robj {
 }
 
 /// RSpectrumDescription
-pub struct RSpectrumDescription(SpectrumDescription);
+pub struct RSpectrumDescription(pub SpectrumDescription);
 
 impl From<RSpectrumDescription> for Robj {
     fn from(val: RSpectrumDescription) -> Self {
@@ -204,6 +202,17 @@ impl From<RSpectrumDescription> for Robj {
     }
 }
 
+/// Send-safe: takes a reader by mutable reference, returns data + String error.
+/// Uses metadata-only access for fast description reading.
+pub fn read_desc_raw_with_reader(reader: &mut MzPeakReader, index: usize) ->
+                                Result<SpectrumDescription, String> {
+    reader
+        .get_spectrum_metadata(index as u64)
+        .map_err(|e| e.to_string())?
+        .ok_or_else(|| format!("No spectrum available for index {index}"))
+
+}
+
 /// Read SpectrumDescription of a mzPeak file.
 ///
 /// @param filename Path to the mzPeak archive.
@@ -212,9 +221,10 @@ impl From<RSpectrumDescription> for Robj {
 ///
 /// @noRd
 pub fn read_desc(filename: String, index: usize) -> extendr_api::Result<Robj> {
-    let path = path::PathBuf::from(filename);
+    let path = PathBuf::from(&filename);
     let mut reader = MzPeakReader::new(path)
         .map_err(|e| extendr_api::Error::from(e.to_string()))?;
-    let spec = reader.get_spectrum_by_index(index).unwrap();
-    Ok(RSpectrumDescription(spec.description().clone()).into())
+    let desc = read_desc_raw_with_reader(&mut reader, index)
+        .map_err(extendr_api::Error::from)?;
+    Ok(RSpectrumDescription(desc).into())
 }
