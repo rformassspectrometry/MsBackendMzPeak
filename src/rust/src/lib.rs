@@ -1,46 +1,155 @@
-mod read;
-mod read_spectrum;
 mod read_desc;
-
-use read_desc::{RSpectrumDescription, read_desc_raw_with_reader};
-use read_spectrum::read_peaks_with_reader;
+use read_desc::RSpectrumDescription;
 use extendr_api::prelude::*;
-use rayon::prelude::*;
-use mzdata::spectrum::SpectrumDescription;
+use mzdata::prelude::*;
 use mzpeak_prototyping::MzPeakReader;
-use std::path::PathBuf;
+use std::panic::{self, AssertUnwindSafe};
 
-/// Read an mzPeak archive and return the number of spectra and total number of
-/// points.
+/// Build a data.frame without going through R's `data.frame()` constructor
+///
+/// @author Gabriele Tomè
+///
+/// @noRd
+fn make_dataframe(columns: Vec<(&str, Robj)>, nrow: usize) -> Robj {
+    let names: Vec<&str> = columns.iter().map(|(n, _)| *n).collect();
+    let values: Vec<Robj> = columns.into_iter().map(|(_, v)| v).collect();
+
+    let mut df: Robj = List::from_values(values).into();
+    df.set_attrib(names_symbol(), Robj::from(names)).unwrap();
+    df.set_attrib(class_symbol(),
+                 Robj::from("data.frame"))
+        .unwrap();
+    df.set_attrib(
+        row_names_symbol(),
+        (1..=nrow as i32).collect_robj(),
+    )
+    .unwrap();
+    df
+}
+
+/// Read an the spectrum of a mzPeak archive.
 ///
 /// @param filename `character(1)` Path to the mzPeak archive.
 ///
-/// @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-///     or 32 bytes).
+/// @param index optional `integer` with the index of the Spectrum to extract.
+///     If not provided, the function extract all the Spectrum.
 ///
-/// @return `list` containing the number of spectra and the number of points in
-//      the file.
+/// @return `list` containing the spectra data.
 ///
 /// @author Gabriele Tomè
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_info(filename: String,
-                #[extendr(default = "NULL")] encryption_key: Option<String>) ->
-                extendr_api::Result<Robj> {
-    read::info(filename, encryption_key)
+fn mzpeak_read_peaks(path: &str, index: i32) -> List {
+    let mut reader = MzPeakReader::new(path)
+        .expect("failed to open mzpeak file");
+    let spectrum = reader
+        .get_spectrum_by_index(index as usize)
+        .expect("spectrum index out of range");
+
+    let desc = spectrum.description();
+    let peaks = spectrum.peaks();
+    let n = peaks.len();
+
+    let mut mz = Vec::with_capacity(n);
+    let mut intensity = Vec::with_capacity(n);
+    for p in peaks.iter() {
+        mz.push(p.mz());
+        intensity.push(p.intensity() as f64);
+    }
+
+    let peaks_df = make_dataframe(
+        vec![("mz", Robj::from(mz)), ("intensity", Robj::from(intensity))],
+        n,
+    );
+
+    list!(
+        id = desc.id.clone(),
+        ms_level = desc.ms_level as i32,
+        polarity = format!("{:?}", desc.polarity),
+        n_peaks = n as i32,
+        peaks = peaks_df
+    )
+}
+
+
+/// Read an the peaks of a mzPeak archive.
+///
+/// @param filename `character(1)` Path to the mzPeak archive.
+///
+/// @return `data.frame` containing the spectra data.
+///
+/// @author Gabriele Tomè
+///
+/// @noRd
+#[extendr]
+fn mzpeak_read_all_peaks(path: &str) -> Robj {
+    let mut reader = MzPeakReader::new(path)
+        .expect("failed to open mzpeak file");
+
+    let mut spectrum_index: Vec<i32> = Vec::new();
+    let mut mz: Vec<f64> = Vec::new();
+    let mut intensity: Vec<f64> = Vec::new();
+    let mut n_empty = 0usize;
+    let mut n_total = 0usize;
+
+    // Suppress the default Rust panic printout to stderr — we handle and
+    // report failures ourselves below, so the raw panic message is just noise.
+    let prev_hook = panic::take_hook();
+    panic::set_hook(Box::new(|_| {}));
+
+    for (i, spectrum) in (&mut reader).enumerate() {
+        n_total += 1;
+
+        // spectrum.peaks() panics internally (NotFound(MZArray)) when a
+        // spectrum has no m/z array at all — typically an MS2 scan with
+        // zero detected fragment ions. Treat that as "0 peaks", not an error.
+        let result = panic::catch_unwind(AssertUnwindSafe(|| {
+            let peaks = spectrum.peaks();
+            let m: Vec<f64> = peaks.iter().map(|p| p.mz()).collect();
+            let it: Vec<f64> = peaks.iter().map(|p| p.intensity() as f64).collect();
+            (m, it)
+        }));
+
+        match result {
+            Ok((m, it)) => {
+                let n = m.len();
+                spectrum_index.reserve(n);
+                mz.reserve(n);
+                intensity.reserve(n);
+
+                spectrum_index.extend(std::iter::repeat(i as i32).take(n));
+                mz.extend(m);
+                intensity.extend(it);
+            }
+            Err(_) => {
+                n_empty += 1;
+            }
+        }
+    }
+
+    panic::set_hook(prev_hook);
+
+    if n_empty > 0 {
+        eprintln!(
+            "mzpeak: {n_empty} of {n_total} spectra had no readable peak array (treated as 0 peaks)"
+        );
+    }
+
+    let nrow = mz.len();
+    make_dataframe(
+        vec![
+            ("spectrum_index", Robj::from(spectrum_index)),
+            ("mz", Robj::from(mz)),
+            ("intensity", Robj::from(intensity)),
+        ],
+        nrow,
+    )
 }
 
 /// Function to read description field of a mzPeak file.
 ///
 /// @param filename Path to the mzPeak archive.
-///
-/// @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-///     or 32 bytes).
-///
-/// @param index optional `integer` with the index of the SpectrumDescription
-//      to extract. If not provided, the function extract all the
-//      SpectrumDescription.
 ///
 /// @return `list` containing the matadate of the spectra.
 ///
@@ -48,126 +157,35 @@ fn mzpeak_info(filename: String,
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_read_desc(filename: String,
-                    #[extendr(default = "NULL")] encryption_key: Option<String>,
-                    #[extendr(default = "NULL")] index: Option<usize>) ->
-                    extendr_api::Result<Robj> {
-    let n_spectra = read::mzpeak_n_spectra(filename.clone(),
-                                            encryption_key).unwrap();
+fn mzpeak_read_all_metadata(path: &str) -> Robj {
+    let mut reader = MzPeakReader::new(path)
+        .expect("failed to open mzpeak file");
 
-    match &index {
-        Some(i) => {
-            if *i >= n_spectra {
-                return Err(extendr_api::Error::Other(format!("No spectrum available for index {i}")));
-            }
-            let robj = read_desc::read_desc(filename.clone(), *i)?;
-            Ok(List::from_values(vec![robj]).into_robj())
-        },
-        None => {
-            let raw: Vec<SpectrumDescription> = (0..n_spectra)
-                .into_par_iter()
-                .map_init(
-                    || {
-                        let path = PathBuf::from(&filename);
-                        MzPeakReader::new(path).expect("failed to open mzPeak reader")
-                    },
-                    |reader, i| read_desc_raw_with_reader(reader, i),
-                )
-                .collect::<Result<Vec<_>, String>>()?;
+    let mut list_desc: Vec<RSpectrumDescription> = Vec::new();
 
-            let descriptions: Vec<Robj> = raw.into_iter()
-                .map(|d| RSpectrumDescription(d).into())
-                .collect();
-
-            Ok(List::from_values(descriptions).into_robj())
-        },
+    for spectrum in &mut reader {
+        let desc = spectrum.description();
+        list_desc.push(RSpectrumDescription(desc.clone()).into());
     }
+    let list: List = list_desc
+        .into_iter()
+        .map(Robj::from)   // uses your `From<RSpectrumDescription> for Robj` impl
+        .collect();
+    list.into_robj()
 }
 
-/// Read an the spectrum of a mzPeak archive.
+/// Function to convert files to mzPeak
 ///
-/// @param filename `character(1)` Path to the mzPeak archive.
+/// @param filename `character(1)` Path to the file to convert.
 ///
-/// @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-///     or 32 bytes).
-///
-/// @param index optional `integer` with the index of the Spectrum to extract.
-///     If not provided, the function extract all the Spectrum.
-///
-/// @return `list` of `data.frame` containing the spectra data.
+/// @param outfile `character(1)` Path where save the mzPeak archive.
 ///
 /// @author Gabriele Tomè
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_read_spectrum(filename: String,
-                    #[extendr(default = "NULL")] encryption_key: Option<String>,
-                    #[extendr(default = "NULL")] index: Option<usize>) ->
-                    extendr_api::Result<Robj> {
-    let n_spectra = read::mzpeak_n_spectra(filename.clone(),
-                                    encryption_key).unwrap();
-    let spectrum = match &index {
-        Some(i) => {
-            if *i >= n_spectra {
-                return Err(extendr_api::Error::Other(format!("No spectrum available for index {i}")));
-            }
-            vec![read_spectrum::read_spectrum(filename.clone(), *i)?]
-        },
-        None => {
-            let mut spectrum = Vec::with_capacity(n_spectra);
-            for i in 0..n_spectra {
-                spectrum.push(read_spectrum::read_spectrum(filename.clone(),
-                                                            i)?);
-            }
-            spectrum
-        },
-    };
-    Ok(List::from_values(spectrum).into_robj())
-}
-
-/// Read an the peaks of a mzPeak archive.
-///
-/// @param filename `character(1)` Path to the mzPeak archive.
-///
-/// @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-///     or 32 bytes).
-///
-/// @param index optional `integer` with the index of the Spectrum to extract.
-///     If not provided, the function extract all the Spectrum.
-///
-/// @return `list` of `data.frame` containing the spectra data.
-///
-/// @author Gabriele Tomè
-///
-/// @noRd
-#[extendr]
-fn mzpeak_read_peaks(filename: String,
-                    #[extendr(default = "NULL")] encryption_key: Option<String>,
-                    #[extendr(default = "NULL")] index: Option<usize>) ->
-                    extendr_api::Result<Robj> {
-    let n_spectra = read::mzpeak_n_spectra(filename.clone(),
-                                    encryption_key).unwrap();
-    let peaks = match &index {
-        Some(i) => {
-            if *i >= n_spectra {
-                return Err(extendr_api::Error::Other(format!("No peaks available for index {i}")));
-            }
-            vec![read_spectrum::read_peaks(filename.clone(), *i)?]
-        },
-        None => {
-            // Open reader once and reuse across all spectra for efficiency
-            let path = PathBuf::from(&filename);
-            let mut reader = MzPeakReader::new(path)
-                .map_err(|e| extendr_api::Error::from(e.to_string()))?;
-
-            let mut peaks = Vec::with_capacity(n_spectra);
-            for i in 0..n_spectra {
-                peaks.push(read_peaks_with_reader(&mut reader, i)?);
-            }
-            peaks
-        },
-    };
-    Ok(List::from_values(peaks).into_robj())
+fn mzpeak_convert(filename: String, outfile: String) {
+    todo!()
 }
 
 // Macro to generate exports.
@@ -175,8 +193,8 @@ fn mzpeak_read_peaks(filename: String,
 // See corresponding C code in `entrypoint.c`.
 extendr_module! {
     mod MsBackendMzPeak;
-    fn mzpeak_info;
-    fn mzpeak_read_desc;
-    fn mzpeak_read_spectrum;
     fn mzpeak_read_peaks;
+    fn mzpeak_read_all_peaks;
+    fn mzpeak_read_all_metadata;
+    fn mzpeak_convert;
 }

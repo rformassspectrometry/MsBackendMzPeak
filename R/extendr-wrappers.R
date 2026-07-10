@@ -5,69 +5,51 @@
 #' @useDynLib MsBackendMzPeak, .registration = TRUE
 NULL
 
-#' Read an mzPeak archive and return the number of spectra and total number of
-#' points.
+#' Read an the spectrum of a mzPeak archive.
 #'
 #' @param filename `character(1)` Path to the mzPeak archive.
 #'
-#' @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-#'     or 32 bytes).
+#' @param index optional `integer` with the index of the Spectrum to extract.
+#'     If not provided, the function extract all the Spectrum.
 #'
-#' @return `list` containing the number of spectra and the number of points in
+#' @return `list` containing the spectra data.
 #'
 #' @author Gabriele Tomè
 #'
 #' @noRd
-mzpeak_info <- function(filename, encryption_key = NULL) .Call(wrap__mzpeak_info, filename, encryption_key)
+mzpeak_read_peaks <- function(path, index) .Call(wrap__mzpeak_read_peaks, path, index)
+
+#' Read an the peaks of a mzPeak archive.
+#'
+#' @param filename `character(1)` Path to the mzPeak archive.
+#'
+#' @return `data.frame` containing the spectra data.
+#'
+#' @author Gabriele Tomè
+#'
+#' @noRd
+mzpeak_read_all_peaks <- function(path) .Call(wrap__mzpeak_read_all_peaks, path)
 
 #' Function to read description field of a mzPeak file.
 #'
 #' @param filename Path to the mzPeak archive.
-#'
-#' @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-#'     or 32 bytes).
-#'
-#' @param index optional `integer` with the index of the SpectrumDescription
 #'
 #' @return `list` containing the matadate of the spectra.
 #'
 #' @author Gabriele Tomè
 #'
 #' @noRd
-mzpeak_read_desc <- function(filename, encryption_key = NULL, index = NULL) .Call(wrap__mzpeak_read_desc, filename, encryption_key, index)
+mzpeak_read_all_metadata <- function(path) .Call(wrap__mzpeak_read_all_metadata, path)
 
-#' Read an the spectrum of a mzPeak archive.
+#' Function to convert files to mzPeak
 #'
-#' @param filename `character(1)` Path to the mzPeak archive.
+#' @param filename `character(1)` Path to the file to convert.
 #'
-#' @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-#'     or 32 bytes).
-#'
-#' @param index optional `integer` with the index of the Spectrum to extract.
-#'     If not provided, the function extract all the Spectrum.
-#'
-#' @return `list` of `data.frame` containing the spectra data.
+#' @param outfile `character(1)` Path where save the mzPeak archive.
 #'
 #' @author Gabriele Tomè
 #'
 #' @noRd
-mzpeak_read_spectrum <- function(filename, encryption_key = NULL, index = NULL) .Call(wrap__mzpeak_read_spectrum, filename, encryption_key, index)
-
-#' Read an the peaks of a mzPeak archive.
-#'
-#' @param filename `character(1)` Path to the mzPeak archive.
-#'
-#' @param encryption_key `character(1)` Optional AES decryption key (16, 24,
-#'     or 32 bytes).
-#'
-#' @param index optional `integer` with the index of the Spectrum to extract.
-#'     If not provided, the function extract all the Spectrum.
-#'
-#' @return `list` of `data.frame` containing the spectra data.
-#'
-#' @author Gabriele Tomè
-#'
-#' @noRd
-mzpeak_read_peaks <- function(filename, encryption_key = NULL, index = NULL) .Call(wrap__mzpeak_read_peaks, filename, encryption_key, index)
+mzpeak_convert <- function(filename, outfile) .Call(wrap__mzpeak_convert, filename, outfile)
 
 # nolint end

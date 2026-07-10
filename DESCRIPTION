@@ -1,6 +1,6 @@
 Package: MsBackendMzPeak
 Title: MS Data Backend for mzPeak Data Files
-Version: 0.97.1
+Version: 0.97.2
 Authors@R:
     c(person(given = "Gabriele", family = "Tomè",
              email = "gabriele.tome@eurac.edu",

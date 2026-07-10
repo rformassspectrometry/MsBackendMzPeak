@@ -1,10 +1,8 @@
-use mzpeak_prototyping::MzPeakReader;
 use mzdata::params::{Param, ParamValue};
 use mzdata::spectrum::{
     Acquisition, Activation, IsolationWindow, Precursor, ScanEvent, ScanWindow,
     SelectedIon, SpectrumDescription,
 };
-use std::path::PathBuf;
 use extendr_api::prelude::*;
 /// RParam
 struct RParam<'a>(&'a Param);
@@ -200,31 +198,4 @@ impl From<RSpectrumDescription> for Robj {
             ]
         ).unwrap().into_robj()
     }
-}
-
-/// Send-safe: takes a reader by mutable reference, returns data + String error.
-/// Uses metadata-only access for fast description reading.
-pub fn read_desc_raw_with_reader(reader: &mut MzPeakReader, index: usize) ->
-                                Result<SpectrumDescription, String> {
-    reader
-        .get_spectrum_metadata(index as u64)
-        .map_err(|e| e.to_string())?
-        .ok_or_else(|| format!("No spectrum available for index {index}"))
-
-}
-
-/// Read SpectrumDescription of a mzPeak file.
-///
-/// @param filename Path to the mzPeak archive.
-///
-/// @param index `integer` with the index of the SpectrumDescription to extract.
-///
-/// @noRd
-pub fn read_desc(filename: String, index: usize) -> extendr_api::Result<Robj> {
-    let path = PathBuf::from(&filename);
-    let mut reader = MzPeakReader::new(path)
-        .map_err(|e| extendr_api::Error::from(e.to_string()))?;
-    let desc = read_desc_raw_with_reader(&mut reader, index)
-        .map_err(extendr_api::Error::from)?;
-    Ok(RSpectrumDescription(desc).into())
 }
