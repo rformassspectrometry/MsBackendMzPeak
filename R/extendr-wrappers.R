@@ -47,7 +47,7 @@ mzpeak_read_all_metadata <- function(path) .Call(wrap__mzpeak_read_all_metadata,
 #'
 #' @param outfile `character(1)` Path where save the mzPeak archive.
 #'
-#' @author Gabriele Tomè
+#' @author Gabriele Tomè, Joshua Klein
 #'
 #' @noRd
 mzpeak_convert <- function(filename, outfile) .Call(wrap__mzpeak_convert, filename, outfile)

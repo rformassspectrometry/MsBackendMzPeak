@@ -6,6 +6,7 @@ version = 3
 name = "MsBackendMzPeak"
 version = "0.1.0"
 dependencies = [
+ "clap",
  "extendr-api",
  "mzdata",
  "mzpeak_prototyping",

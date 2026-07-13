@@ -19,6 +19,7 @@ mzdata = "0.64.1"
 mzpeak_prototyping = { git = "https://github.com/HUPO-PSI/mzPeak.git" }
 parquet = { version = "57.0.0", features = ["encryption"] }
 rayon = "1"
+clap = "4.6.1"
 
 [profile.release]
 lto = true

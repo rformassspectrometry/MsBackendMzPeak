@@ -3,7 +3,8 @@
 ## Changes in 0.97.2
 
 - Improve in efficiency.
-- Read *spectra_peaks.parquet* instead of *spectra_data.parquet*
+- Read *spectra_peaks.parquet* instead of *spectra_data.parquet*.
+- Draft version of `convertToMzPeak()` to convert files.
 
 ## Changes in 0.97.1
 

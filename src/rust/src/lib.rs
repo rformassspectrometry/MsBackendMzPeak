@@ -1,9 +1,18 @@
 mod read_desc;
 use read_desc::RSpectrumDescription;
+
+mod convert;
+use convert::{convert_file, ConvertArgs};
+
 use extendr_api::prelude::*;
-use mzdata::prelude::*;
+use mzdata::{prelude::*};
 use mzpeak_prototyping::MzPeakReader;
-use std::panic::{self, AssertUnwindSafe};
+use std::{
+    io,
+    panic::{self, AssertUnwindSafe},
+    path::{Path, PathBuf},
+    fs,
+    time::Instant,};
 
 /// Build a data.frame without going through R's `data.frame()` constructor
 ///
@@ -180,12 +189,30 @@ fn mzpeak_read_all_metadata(path: &str) -> Robj {
 ///
 /// @param outfile `character(1)` Path where save the mzPeak archive.
 ///
-/// @author Gabriele Tomè
+/// @author Gabriele Tomè, Joshua Klein
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_convert(filename: String, outfile: String) {
-    todo!()
+fn mzpeak_convert(filename: String, outfile: String) -> io::Result<()>{
+    let filename = Path::new(&filename);
+    let outfile = PathBuf::from(outfile);
+
+    let start = Instant::now();
+    // TODO: improve and handle the different parameters
+    let args = ConvertArgs::default();
+
+    let stat = fs::metadata(&filename)?;
+    let size = stat.len() as f64 / 1e9;
+    println!("{} is {size:0.3}GB", filename.display());
+
+    convert_file(filename, &outfile, &args)?;
+
+    println!("{:0.2} seconds elapsed", start.elapsed().as_secs_f64());
+    let stat = fs::metadata(&outfile)?;
+    let size = stat.len() as f64 / 1e9;
+    println!("{} is now {size:0.3}GB\n", outfile.display());
+
+    Ok(())
 }
 
 // Macro to generate exports.
