@@ -1,8 +1,11 @@
-mod read_desc;
-use read_desc::RSpectrumDescription;
+mod parser_fields;
+use parser_fields::{RSpectrumDescription, RFileDescription, RSoftware};
 
 mod convert;
 use convert::{convert_file, ConvertArgs};
+
+mod sample_metadata;
+use sample_metadata::*;
 
 use extendr_api::prelude::*;
 use mzdata::{prelude::*};
@@ -156,7 +159,7 @@ fn mzpeak_read_all_peaks(path: &str) -> Robj {
     )
 }
 
-/// Function to read description field of a mzPeak file.
+/// Function to read spectrum metadata fields of a mzPeak file.
 ///
 /// @param filename Path to the mzPeak archive.
 ///
@@ -166,21 +169,64 @@ fn mzpeak_read_all_peaks(path: &str) -> Robj {
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_read_all_metadata(path: &str) -> Robj {
+fn mzpeak_read_all_spectrum_metadata(path: &str) -> Robj {
     let mut reader = MzPeakReader::new(path)
         .expect("failed to open mzpeak file");
 
-    let mut list_desc: Vec<RSpectrumDescription> = Vec::new();
+    let mut list_desc: Vec<RSpectrumDescription> = Vec::with_capacity(reader.len());
 
-    for spectrum in &mut reader {
-        let desc = spectrum.description();
-        list_desc.push(RSpectrumDescription(desc.clone()).into());
-    }
+    list_desc.extend(
+        reader.by_ref()
+            .map(|spectrum| RSpectrumDescription(spectrum
+                .description().clone()).into())
+    );
     let list: List = list_desc
         .into_iter()
-        .map(Robj::from)   // uses your `From<RSpectrumDescription> for Robj` impl
+        .map(Robj::from)
         .collect();
     list.into_robj()
+}
+
+/// Function to read sample metadata `FileIndex` of a mzPeak file.
+///
+/// @param filename Path to the mzPeak archive.
+///
+/// @author Gabriele Tomè
+///
+/// @noRd
+#[extendr]
+fn mzpeak_read_sample_metadata(path: &str) {
+    mzpeak_sample_metadata(path);
+}
+
+/// Function to read File Description fields of  metadata `FileIndex` of a
+/// mzPeak file.
+///
+/// @param filename Path to the mzPeak archive.
+///
+/// @author Gabriele Tomè
+///
+/// @noRd
+#[extendr]
+fn mzpeak_read_file_description(path: &str) -> Robj {
+    RFileDescription(mzpeak_file_description(path)).into()
+}
+
+/// Function to read File Description fields of  metadata `FileIndex` of a
+/// mzPeak file.
+///
+/// @param filename Path to the mzPeak archive.
+///
+/// @author Gabriele Tomè
+///
+/// @noRd
+#[extendr]
+fn mzpeak_read_software(path: &str) -> Robj {
+    mzpeak_softwares(path)
+        .iter()
+        .map(|sw| Robj::from(RSoftware(sw.clone())))
+        .collect::<List>()
+        .into_robj()
 }
 
 /// Function to convert files to mzPeak
@@ -222,6 +268,9 @@ extendr_module! {
     mod MsBackendMzPeak;
     fn mzpeak_read_peaks;
     fn mzpeak_read_all_peaks;
-    fn mzpeak_read_all_metadata;
+    fn mzpeak_read_all_spectrum_metadata;
     fn mzpeak_convert;
+    fn mzpeak_read_sample_metadata;
+    fn mzpeak_read_file_description;
+    fn mzpeak_read_software;
 }

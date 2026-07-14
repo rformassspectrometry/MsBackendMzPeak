@@ -30,7 +30,7 @@ mzpeak_read_peaks <- function(path, index) .Call(wrap__mzpeak_read_peaks, path, 
 #' @noRd
 mzpeak_read_all_peaks <- function(path) .Call(wrap__mzpeak_read_all_peaks, path)
 
-#' Function to read description field of a mzPeak file.
+#' Function to read spectrum metadata fields of a mzPeak file.
 #'
 #' @param filename Path to the mzPeak archive.
 #'
@@ -39,7 +39,7 @@ mzpeak_read_all_peaks <- function(path) .Call(wrap__mzpeak_read_all_peaks, path)
 #' @author Gabriele Tomè
 #'
 #' @noRd
-mzpeak_read_all_metadata <- function(path) .Call(wrap__mzpeak_read_all_metadata, path)
+mzpeak_read_all_spectrum_metadata <- function(path) .Call(wrap__mzpeak_read_all_spectrum_metadata, path)
 
 #' Function to convert files to mzPeak
 #'
@@ -51,5 +51,34 @@ mzpeak_read_all_metadata <- function(path) .Call(wrap__mzpeak_read_all_metadata,
 #'
 #' @noRd
 mzpeak_convert <- function(filename, outfile) .Call(wrap__mzpeak_convert, filename, outfile)
+
+#' Function to read sample metadata `FileIndex` of a mzPeak file.
+#'
+#' @param filename Path to the mzPeak archive.
+#'
+#' @author Gabriele Tomè
+#'
+#' @noRd
+mzpeak_read_sample_metadata <- function(path) .Call(wrap__mzpeak_read_sample_metadata, path)
+
+#' Function to read File Description fields of  metadata `FileIndex` of a
+#' mzPeak file.
+#'
+#' @param filename Path to the mzPeak archive.
+#'
+#' @author Gabriele Tomè
+#'
+#' @noRd
+mzpeak_read_file_description <- function(path) .Call(wrap__mzpeak_read_file_description, path)
+
+#' Function to read File Description fields of  metadata `FileIndex` of a
+#' mzPeak file.
+#'
+#' @param filename Path to the mzPeak archive.
+#'
+#' @author Gabriele Tomè
+#'
+#' @noRd
+mzpeak_read_software <- function(path) .Call(wrap__mzpeak_read_software, path)
 
 # nolint end

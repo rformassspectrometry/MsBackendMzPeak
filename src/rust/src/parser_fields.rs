@@ -1,11 +1,12 @@
+use mzdata::{meta::*};
 use mzdata::params::{Param, ParamValue};
 use mzdata::spectrum::{
     Acquisition, Activation, IsolationWindow, Precursor, ScanEvent, ScanWindow,
-    SelectedIon, SpectrumDescription,
+    SelectedIon, SpectrumDescription
 };
 use extendr_api::prelude::*;
 /// RParam
-struct RParam<'a>(&'a Param);
+pub struct RParam<'a>(pub &'a Param);
 
 impl<'a> From<RParam<'a>> for Robj {
     fn from(val: RParam<'a>) -> Self {
@@ -195,6 +196,71 @@ impl From<RSpectrumDescription> for Robj {
                 params_robj,
                 RAcquisition(&desc.acquisition).into(),
                 precursors.into_robj()
+            ]
+        ).unwrap().into_robj()
+    }
+}
+
+
+/// RFileDescription
+pub struct RFileDescription(pub FileDescription);
+
+impl From<RFileDescription> for Robj {
+    fn from(val: RFileDescription) -> Self {
+        let desc = &val.0;
+        let source_files_robj = source_files_to_robj(&desc.source_files);
+        let contents_robj = params_to_robj(&desc.contents);
+        List::from_names_and_values(
+            &["source_files", "contents"],
+            &[
+                source_files_robj,
+                contents_robj
+            ]
+        ).unwrap().into_robj()
+    }
+}
+
+/// RSourceFile
+pub struct RSourceFile<'a>(pub &'a SourceFile);
+
+impl<'a> From<RSourceFile<'a>> for Robj {
+    fn from(val: RSourceFile<'a>) -> Self {
+        let p = val.0;
+        let params_robj = params_to_robj(&p.params);
+        let file_format_robj = RParam(&p.file_format.clone().unwrap()).into();
+        let id_format_robj = RParam(&p.id_format.clone().unwrap()).into();
+        List::from_names_and_values(
+            &["name", "location", "id",
+                    "file_format", "id_format", "params"],
+            &[
+                p.name.as_str().into_robj(),
+                p.location.as_str().into_robj(),
+                p.id.as_str().into_robj(),
+                file_format_robj,
+                id_format_robj,
+                params_robj
+            ],
+        ).unwrap().into_robj()
+    }
+}
+
+fn source_files_to_robj(source_file: &[SourceFile]) -> Robj {
+    source_file.iter().map(|p| Robj::from(RSourceFile(p))).collect::<List>().into_robj()
+}
+
+/// RSoftware
+pub struct RSoftware(pub Software);
+
+impl From<RSoftware> for Robj {
+    fn from(val: RSoftware) -> Self {
+        let sw = &val.0;
+        let params_robj = params_to_robj(&sw.params);
+        List::from_names_and_values(
+            &["id", "version", "params"],
+            &[
+                sw.id.as_str().into_robj(),
+                sw.version.as_str().into_robj(),
+                params_robj
             ]
         ).unwrap().into_robj()
     }

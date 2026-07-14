@@ -56,3 +56,12 @@ convertToMzPeak <- function(path, pattern = ".mzML$|.mzml$",
     }
 }
 
+
+spectrum_metadata <- function(file){
+    if (!file.exists(file))
+        stop("File does not exist!")
+
+    sp_desc <- mzpeak_read_all_spectrum_metadata(file)
+    res <- unlist(sp_desc[[1]])
+
+}
