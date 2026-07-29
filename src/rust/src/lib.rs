@@ -1,5 +1,9 @@
 mod parser_fields;
-use parser_fields::{RSpectrumDescription, RFileDescription, RSoftware};
+use parser_fields::{
+    RSpectrumDescription,
+    RSpectrumDescriptionMinimal,
+    RFileDescription,
+    RSoftware};
 
 mod convert;
 use convert::{convert_file, ConvertArgs};
@@ -9,6 +13,9 @@ use sample_metadata::*;
 
 use extendr_api::prelude::*;
 use mzdata::{prelude::*};
+use mzdata::spectrum::{
+    SpectrumDescription
+};
 use mzpeak_prototyping::MzPeakReader;
 use std::{
     io,
@@ -16,72 +23,99 @@ use std::{
     path::{Path, PathBuf},
     fs,
     time::Instant,};
+use rayon::prelude::*;
+use indexmap::IndexMap;
 
-/// Build a data.frame without going through R's `data.frame()` constructor
+/// Load base info of a mzPeak archive(s).
 ///
-/// @author Gabriele Tomè
+/// @param paths `character` Paths to the mzPeak archive(s).
 ///
-/// @noRd
-fn make_dataframe(columns: Vec<(&str, Robj)>, nrow: usize) -> Robj {
-    let names: Vec<&str> = columns.iter().map(|(n, _)| *n).collect();
-    let values: Vec<Robj> = columns.into_iter().map(|(_, v)| v).collect();
-
-    let mut df: Robj = List::from_values(values).into();
-    df.set_attrib(names_symbol(), Robj::from(names)).unwrap();
-    df.set_attrib(class_symbol(),
-                 Robj::from("data.frame"))
-        .unwrap();
-    df.set_attrib(
-        row_names_symbol(),
-        (1..=nrow as i32).collect_robj(),
-    )
-    .unwrap();
-    df
-}
-
-/// Read an the spectrum of a mzPeak archive.
-///
-/// @param filename `character(1)` Path to the mzPeak archive.
-///
-/// @param index optional `integer` with the index of the Spectrum to extract.
-///     If not provided, the function extract all the Spectrum.
-///
-/// @return `list` containing the spectra data.
+/// @return `list` of `data.frame` containing the id of the spectra for each
+///     file.
 ///
 /// @author Gabriele Tomè
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_read_peaks(path: &str, index: i32) -> List {
+fn load_mzpeak(paths: Vec<String>) -> Robj {
+    let indexs: Vec<IndexMap<Box<str>, u64>> = paths
+        .par_iter()
+        .map(|p|
+             MzPeakReader::new(p)
+                .expect("failed to open mzpeak file")
+                .get_index().offsets.clone())
+        .collect();
+
+    let r_list: Vec<Robj> = indexs
+        .into_iter()
+        .map(|idx| {
+            let l = idx.len();
+            let (names, values): (Vec<String>, Vec<f64>) = idx
+                .into_iter()
+                .map(|(k, v)| (k.into_string(), v as f64))
+                .unzip();
+
+            make_dataframe(
+                vec![
+                    ("id", Robj::from(names)),
+                    ("spectrum_id", values.into_robj())
+                ], l)
+        })
+        .collect();
+
+    List::from_names_and_values(paths, r_list).into_robj()
+}
+
+
+/// Read list of spectrum of a mzPeak archive.
+///
+/// @param filename `character(1)` Path to the mzPeak archive.
+///
+/// @param index optional `integer` with the indexs of the Spectrum to extract.
+///
+/// @return `data.frame` containing the spectra data.
+///
+/// @author Gabriele Tomè
+///
+/// @noRd
+#[extendr]
+fn spectrum_peaks_by_id(path: &str, index: Vec<i32>) -> Robj {
     let mut reader = MzPeakReader::new(path)
         .expect("failed to open mzpeak file");
-    let spectrum = reader
-        .get_spectrum_by_index(index as usize)
+
+    let index: Vec<usize> = index.into_iter()
+        .map(|i| (i - 1) as usize)
+        .collect();
+
+    let spectra = reader
+        .get_spectra_batch(index.iter().copied())
         .expect("spectrum index out of range");
 
-    let desc = spectrum.description();
-    let peaks = spectrum.peaks();
-    let n = peaks.len();
+    // Count total number of peaks across all spectra to size the vectors once.
+    let n_total: usize = spectra.iter().map(|s| s.peaks().len()).sum();
 
-    let mut mz = Vec::with_capacity(n);
-    let mut intensity = Vec::with_capacity(n);
-    for p in peaks.iter() {
-        mz.push(p.mz());
-        intensity.push(p.intensity() as f64);
+    let mut spectrum_id = Vec::with_capacity(n_total);
+    let mut mz = Vec::with_capacity(n_total);
+    let mut intensity = Vec::with_capacity(n_total);
+
+    for (spec_idx, spectrum) in index.iter().zip(spectra.iter()) {
+        let peaks = spectrum.peaks();
+        for p in peaks.iter() {
+            spectrum_id.push(*spec_idx);
+            mz.push(p.mz());
+            intensity.push(p.intensity() as f64);
+        }
     }
 
     let peaks_df = make_dataframe(
-        vec![("mz", Robj::from(mz)), ("intensity", Robj::from(intensity))],
-        n,
+        vec![
+            ("spectrum", Robj::from(spectrum_id)),
+            ("mz", Robj::from(mz)),
+            ("intensity", Robj::from(intensity))],
+        n_total,
     );
 
-    list!(
-        id = desc.id.clone(),
-        ms_level = desc.ms_level as i32,
-        polarity = format!("{:?}", desc.polarity),
-        n_peaks = n as i32,
-        peaks = peaks_df
-    )
+    peaks_df
 }
 
 
@@ -95,7 +129,27 @@ fn mzpeak_read_peaks(path: &str, index: i32) -> List {
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_read_all_peaks(path: &str) -> Robj {
+fn spectrum_peaks(paths: Vec<String>) -> Robj {
+    let peaks: Vec<(Vec<i32>, Vec<f64>, Vec<f64>, usize)> = paths
+        .par_iter()
+        .map(|p| mzpeak_read_all_peaks(p))
+        .collect();
+
+    let mut rvec: Vec<Robj> = Vec::with_capacity(peaks.len());
+    for p in peaks {
+        rvec.push(make_dataframe(
+            vec![
+                ("spectrum_index", Robj::from(p.0)),
+                ("mz", Robj::from(p.1)),
+                ("intensity", Robj::from(p.2)),
+            ], p.3)
+        );
+    }
+
+    rvec.into_robj()
+}
+
+fn mzpeak_read_all_peaks(path: &str) -> (Vec<i32>, Vec<f64>, Vec<f64>, usize) {
     let mut reader = MzPeakReader::new(path)
         .expect("failed to open mzpeak file");
 
@@ -114,8 +168,8 @@ fn mzpeak_read_all_peaks(path: &str) -> Robj {
         n_total += 1;
 
         // spectrum.peaks() panics internally (NotFound(MZArray)) when a
-        // spectrum has no m/z array at all — typically an MS2 scan with
-        // zero detected fragment ions. Treat that as "0 peaks", not an error.
+        // spectrum has no m/z array at all. Treat that as "0 peaks", not an
+        // error.
         let result = panic::catch_unwind(AssertUnwindSafe(|| {
             let peaks = spectrum.peaks();
             let m: Vec<f64> = peaks.iter().map(|p| p.mz()).collect();
@@ -149,42 +203,61 @@ fn mzpeak_read_all_peaks(path: &str) -> Robj {
     }
 
     let nrow = mz.len();
-    make_dataframe(
-        vec![
-            ("spectrum_index", Robj::from(spectrum_index)),
-            ("mz", Robj::from(mz)),
-            ("intensity", Robj::from(intensity)),
-        ],
-        nrow,
-    )
+    (spectrum_index, mz, intensity, nrow)
 }
 
-/// Function to read spectrum metadata fields of a mzPeak file.
+/// Function to read spectrum metadata fields of a mzPeak file(s).
 ///
-/// @param filename Path to the mzPeak archive.
+/// @param filename `character` Path to the mzPeak archive(s).
 ///
-/// @return `list` containing the matadate of the spectra.
+/// @param minimal `logical` to get minimal ("id", "index", "ms_level",
+///     "polarity") or full metadata. Default: `TRUE`
+///
+/// @return `list` containing the metadate of the spectra.
 ///
 /// @author Gabriele Tomè
 ///
 /// @noRd
 #[extendr]
-fn mzpeak_read_all_spectrum_metadata(path: &str) -> Robj {
+fn spectrum_metadata(paths: Vec<String>,
+                    #[extendr(default = true)] minimal: bool) -> Robj {
+    let descs: Vec<Vec<SpectrumDescription>> = paths
+        .par_iter()
+        .map(|p| mzpeak_read_all_spectrum_metadata(p))
+        .collect();
+
+    let mut rvec: Vec<Robj> = Vec::with_capacity(descs.len());
+    for d in descs {
+        rvec.push(descriptions_to_robj(d, minimal));
+    }
+
+    rvec.into_robj()
+}
+
+/// Read all spectrum metadata of a mzPeak file
+fn mzpeak_read_all_spectrum_metadata(path: &str) -> Vec<SpectrumDescription> {
     let mut reader = MzPeakReader::new(path)
         .expect("failed to open mzpeak file");
 
-    let mut list_desc: Vec<RSpectrumDescription> = Vec::with_capacity(reader.len());
+    reader.iter().map(|d| d.description().clone()).collect()
+}
 
-    list_desc.extend(
-        reader.by_ref()
-            .map(|spectrum| RSpectrumDescription(spectrum
-                .description().clone()).into())
-    );
-    let list: List = list_desc
-        .into_iter()
-        .map(Robj::from)
-        .collect();
-    list.into_robj()
+/// Builds the R list from the loaded metadata
+fn descriptions_to_robj(descriptions: Vec<SpectrumDescription>,
+                        minimal: bool) -> Robj {
+    if minimal {
+        descriptions
+            .into_iter()
+            .map(|d| RSpectrumDescriptionMinimal(d).into())
+            .collect::<Vec<Robj>>()
+            .into_robj()
+    } else {
+        descriptions
+            .into_iter()
+            .map(|d| RSpectrumDescription(d).into())
+            .collect::<Vec<Robj>>()
+            .into_robj()
+    }
 }
 
 /// Function to read sample metadata `FileIndex` of a mzPeak file.
@@ -261,14 +334,37 @@ fn mzpeak_convert(filename: String, outfile: String) -> io::Result<()>{
     Ok(())
 }
 
+/// Build a data.frame without going through R's `data.frame()` constructor
+///
+/// @author Gabriele Tomè
+///
+/// @noRd
+fn make_dataframe(columns: Vec<(&str, Robj)>, nrow: usize) -> Robj {
+    let names: Vec<&str> = columns.iter().map(|(n, _)| *n).collect();
+    let values: Vec<Robj> = columns.into_iter().map(|(_, v)| v).collect();
+
+    let mut df: Robj = List::from_values(values).into();
+    df.set_attrib(names_symbol(), Robj::from(names)).unwrap();
+    df.set_attrib(class_symbol(),
+                 Robj::from("data.frame"))
+        .unwrap();
+    df.set_attrib(
+        row_names_symbol(),
+        (1..=nrow as i32).collect_robj(),
+    )
+    .unwrap();
+    df
+}
+
 // Macro to generate exports.
 // This ensures exported functions are registered with R.
 // See corresponding C code in `entrypoint.c`.
 extendr_module! {
     mod MsBackendMzPeak;
-    fn mzpeak_read_peaks;
-    fn mzpeak_read_all_peaks;
-    fn mzpeak_read_all_spectrum_metadata;
+    fn load_mzpeak;
+    fn spectrum_peaks_by_id;
+    fn spectrum_peaks;
+    fn spectrum_metadata;
     fn mzpeak_convert;
     fn mzpeak_read_sample_metadata;
     fn mzpeak_read_file_description;

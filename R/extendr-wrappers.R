@@ -5,19 +5,30 @@
 #' @useDynLib MsBackendMzPeak, .registration = TRUE
 NULL
 
-#' Read an the spectrum of a mzPeak archive.
+#' Load base info of a mzPeak archive(s).
 #'
-#' @param filename `character(1)` Path to the mzPeak archive.
+#' @param paths `character` Paths to the mzPeak archive(s).
 #'
-#' @param index optional `integer` with the index of the Spectrum to extract.
-#'     If not provided, the function extract all the Spectrum.
-#'
-#' @return `list` containing the spectra data.
+#' @return `list` of `data.frame` containing the id of the spectra for each
+#'     file.
 #'
 #' @author Gabriele Tomè
 #'
 #' @noRd
-mzpeak_read_peaks <- function(path, index) .Call(wrap__mzpeak_read_peaks, path, index)
+load_mzpeak <- function(paths) .Call(wrap__load_mzpeak, paths)
+
+#' Read list of spectrum of a mzPeak archive.
+#'
+#' @param filename `character(1)` Path to the mzPeak archive.
+#'
+#' @param index optional `integer` with the indexs of the Spectrum to extract.
+#'
+#' @return `data.frame` containing the spectra data.
+#'
+#' @author Gabriele Tomè
+#'
+#' @noRd
+spectrum_peaks_by_id <- function(path, index) .Call(wrap__spectrum_peaks_by_id, path, index)
 
 #' Read an the peaks of a mzPeak archive.
 #'
@@ -28,18 +39,21 @@ mzpeak_read_peaks <- function(path, index) .Call(wrap__mzpeak_read_peaks, path, 
 #' @author Gabriele Tomè
 #'
 #' @noRd
-mzpeak_read_all_peaks <- function(path) .Call(wrap__mzpeak_read_all_peaks, path)
+spectrum_peaks <- function(paths) .Call(wrap__spectrum_peaks, paths)
 
-#' Function to read spectrum metadata fields of a mzPeak file.
+#' Function to read spectrum metadata fields of a mzPeak file(s).
 #'
-#' @param filename Path to the mzPeak archive.
+#' @param filename `character` Path to the mzPeak archive(s).
 #'
-#' @return `list` containing the matadate of the spectra.
+#' @param minimal `logical` to get minimal ("id", "index", "ms_level",
+#'     "polarity") or full metadata. Default: `TRUE`
+#'
+#' @return `list` containing the metadate of the spectra.
 #'
 #' @author Gabriele Tomè
 #'
 #' @noRd
-mzpeak_read_all_spectrum_metadata <- function(path) .Call(wrap__mzpeak_read_all_spectrum_metadata, path)
+spectrum_metadata <- function(paths, minimal) .Call(wrap__spectrum_metadata, paths, minimal)
 
 #' Function to convert files to mzPeak
 #'

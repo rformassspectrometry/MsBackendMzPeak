@@ -201,6 +201,22 @@ impl From<RSpectrumDescription> for Robj {
     }
 }
 
+pub struct RSpectrumDescriptionMinimal(pub SpectrumDescription);
+
+impl From<RSpectrumDescriptionMinimal> for Robj {
+    fn from(val: RSpectrumDescriptionMinimal) -> Self {
+        let desc = &val.0;
+        List::from_names_and_values(
+            &["id", "index", "ms_level", "polarity"],
+            &[
+                desc.id.as_str().into_robj(),
+                desc.index.into_robj(),
+                desc.ms_level.into_robj(),
+                format!("{:?}", desc.polarity).into_robj(),
+            ]
+        ).unwrap().into_robj()
+    }
+}
 
 /// RFileDescription
 pub struct RFileDescription(pub FileDescription);
