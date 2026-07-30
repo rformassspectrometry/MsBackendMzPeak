@@ -30,9 +30,9 @@ load_mzpeak <- function(paths) .Call(wrap__load_mzpeak, paths)
 #' @noRd
 spectrum_peaks_by_id <- function(path, index) .Call(wrap__spectrum_peaks_by_id, path, index)
 
-#' Read an the peaks of a mzPeak archive.
+#' Read an the peaks of a mzPeak archive(s).
 #'
-#' @param filename `character(1)` Path to the mzPeak archive.
+#' @param filename `character` Path to the mzPeak archive(s).
 #'
 #' @return `data.frame` containing the spectra data.
 #'

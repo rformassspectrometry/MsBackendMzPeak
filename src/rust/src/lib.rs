@@ -119,9 +119,9 @@ fn spectrum_peaks_by_id(path: &str, index: Vec<i32>) -> Robj {
 }
 
 
-/// Read an the peaks of a mzPeak archive.
+/// Read an the peaks of a mzPeak archive(s).
 ///
-/// @param filename `character(1)` Path to the mzPeak archive.
+/// @param filename `character` Path to the mzPeak archive(s).
 ///
 /// @return `data.frame` containing the spectra data.
 ///
@@ -149,6 +149,11 @@ fn spectrum_peaks(paths: Vec<String>) -> Robj {
     rvec.into_robj()
 }
 
+/// Read spectra data from a single mzPeak archive
+///
+/// @return tuple with (`spectrum_index`, `mz`, `intensity`, `number of peaks`)
+///
+/// @noRd
 fn mzpeak_read_all_peaks(path: &str) -> (Vec<i32>, Vec<f64>, Vec<f64>, usize) {
     let mut reader = MzPeakReader::new(path)
         .expect("failed to open mzpeak file");
