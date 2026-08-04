@@ -16,7 +16,7 @@ pub fn mzpeak_file_description(path: &str) -> FileDescription {
     reader.file_description().clone()
 }
 
-pub fn mzpeak_instrument(path: &str) -> HashMap<u32, InstrumentConfiguration> {
+pub fn _mzpeak_instrument(path: &str) -> HashMap<u32, InstrumentConfiguration> {
     let reader = MzPeakReader::new(path)
         .expect("failed to open mzpeak file");
     reader.instrument_configurations().clone()

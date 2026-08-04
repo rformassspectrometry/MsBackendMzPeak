@@ -6,6 +6,8 @@ version = 3
 name = "MsBackendMzPeak"
 version = "0.1.0"
 dependencies = [
+ "arrow",
+ "arrow_extendr",
  "clap",
  "extendr-api",
  "indexmap 2.14.0",
@@ -336,6 +338,9 @@ name = "arrow-schema"
 version = "57.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4cf0d4a6609679e03002167a61074a21d7b1ad9ea65e462b2c0a97f8a3b2bc6"
+dependencies = [
+ "bitflags",
+]
 
 [[package]]
 name = "arrow-select"
@@ -366,6 +371,16 @@ dependencies = [
  "num-traits",
  "regex",
  "regex-syntax",
+]
+
+[[package]]
+name = "arrow_extendr"
+version = "57.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9ffcf47dde5b1cbb7e3a1a88f302ac4aa5835d1b1e6f9280eec2a77b2a22696"
+dependencies = [
+ "arrow",
+ "extendr-api",
 ]
 
 [[package]]
@@ -1085,30 +1100,28 @@ dependencies = [
 
 [[package]]
 name = "extendr-api"
-version = "0.9.0"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "803569de0d273b4bf281871046a7d63a23cc12776bdb5b63de5c1e81aae30728"
+checksum = "e002a15028421248374d3beb66d1802ce70d738b666a043a1f4dfffad14bc595"
 dependencies = [
  "extendr-ffi",
  "extendr-macros",
  "once_cell",
  "paste",
- "readonly",
 ]
 
 [[package]]
 name = "extendr-ffi"
-version = "0.9.0"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ba82ddd48e85202654997b81e4b1d39c0c54b5dcd7cae92705f807bf528efcf"
+checksum = "acf3ace33b895bdfc13d02fd7486b26dc71078c256f3399f6272f8bd70fc3a1e"
 
 [[package]]
 name = "extendr-macros"
-version = "0.9.0"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba8fad8d2a0d0651b1947042cf3a8beddc73d39cec3485b200fdfd24cb3bb6aa"
+checksum = "f6b27baf9abffe403f3051efea3c19a0f315be9ec5f1c80efbade1aee5ccccbc"
 dependencies = [
- "lazy_static",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -3031,17 +3044,6 @@ checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
 dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
-]
-
-[[package]]
-name = "readonly"
-version = "0.2.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2a62d85ed81ca5305dc544bd42c8804c5060b78ffa5ad3c64b0fb6a8c13d062"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]

@@ -478,7 +478,7 @@ pub fn convert_from_reader<R: io::Read + io::Seek + Send + 'static>(
     // Write out entries in a separate thread
     let write_handle = thread::spawn(move || {
         let result = panic::catch_unwind(AssertUnwindSafe(|| {
-            for (i, (spectrum, chromatogram)) in recv.into_iter().enumerate() {
+            for (_i, (spectrum, chromatogram)) in recv.into_iter().enumerate() {
                 if let Some(spectrum) = spectrum {
                     writer.write_spectrum(&spectrum)?;
                 } else if let Some(chromatogram) = chromatogram {

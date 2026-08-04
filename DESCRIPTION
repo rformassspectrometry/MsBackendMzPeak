@@ -24,7 +24,8 @@ Depends:
     rextendr
 Imports:
     S4Vectors,
-    methods
+    methods,
+    nanoarrow
 Suggests:
     testthat
 Remotes:

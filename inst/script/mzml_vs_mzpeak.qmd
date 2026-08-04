@@ -41,9 +41,28 @@ Metadata
 
 ```{r}
 small_mzml <- c(MsDataHub::PestMix1_DDA.mzML(), MsDataHub::PestMix1_SWATH.mzML())
+sps_sciex <- Spectra(small_mzml, source = MsBackendMzR())
+
 microbenchmark({
-    sps_sciex <- Spectra(small_mzml, source = MsBackendMzR())
     mtd_small_mzml <- spectraData(sps_sciex)
+}, times = 5L, unit = "s")
+
+```
+
+Peaks single spectra
+
+```{r}
+microbenchmark({
+    peaks_small_mzml <- peaksData(sps_sciex, scan = 1L)
+}, times = 5L, unit = "s")
+
+```
+
+Peaks single spectra
+
+```{r}
+microbenchmark({
+    peaks_small_mzml <- peaksData(sps_sciex, scan = 1:100)
 }, times = 5L, unit = "s")
 
 ```
@@ -52,7 +71,6 @@ Peaks
 
 ```{r}
 microbenchmark({
-    sps_sciex <- Spectra(small_mzml, source = MsBackendMzR())
     peaks_small_mzml <- peaksData(sps_sciex)
 }, times = 5L, unit = "s")
 
@@ -72,7 +90,10 @@ microbenchmark({
 
 ```
 
-Read minimal metadata of all Spectra of the mzPeak based on iterator
+Read minimal metadata of all Spectra of the mzPeak based on iterator.
+
+- `spectrum_metadata()` is the original function,
+- `spectrum_metadata_v2()` is the new function based on Joshua suggestion to use `load_all_spectrum_metadata()`
 
 ```{r}
 small_mzPeak <- list.files(paste0(baseDir, "small_data_files"),
@@ -80,6 +101,8 @@ small_mzPeak <- list.files(paste0(baseDir, "small_data_files"),
 
 microbenchmark({
     desc_min_small_mzpeak_min <- spectrum_metadata(small_mzPeak, minimal = TRUE)
+},{
+    desc_min_small_mzpeak_min_v2 <- spectrum_metadata_v2(small_mzPeak, minimal = TRUE)
 }, times = 5L, unit = "s")
 ```
 
@@ -87,7 +110,9 @@ Read the metadata of all Spectra of the mzPeak based on iterator
 
 ```{r}
 microbenchmark({
-    desc_small_mzpeak_iter <- spectrum_metadata(small_mzPeak, minimal = FALSE)
+    desc_small_mzpeak <- spectrum_metadata(small_mzPeak, minimal = FALSE)
+},{
+    desc_small_mzpeak_v2 <- spectrum_metadata_v2(small_mzPeak, minimal = FALSE)
 }, times = 5L, unit = "s")
 
 ```
@@ -113,11 +138,33 @@ microbenchmark({
 
 ```
 
+Read the Centroid spectrum of all Speactra of the mzPeak (`Spectra_peaks.parquet`).
+One single file
+
+- `spectrum_peaks()` is the original function using `get_spectrum()`, multitreaded on files in RUST,
+- `spectrum_peaks_v2()` is the new function based on Joshua suggestion to use `query_peaks()`, parse the results and convert, multitreaded on files in RUST,
+- `spectrum_peaks_v3()` is the new function based on Joshua suggestion to use `query_peaks()`, `arrow_extendr` to convert the `RecordBatch` to `Robj` in Rust and stream it to R via `nanoarrow::convert_array_stream()`, single thread.
+
+```{r}
+microbenchmark({
+    peaks_small_mzpeak <- spectrum_peaks(small_mzPeak[[1]])
+},{
+    peaks_small_mzpeak <- spectrum_peaks_v2(small_mzPeak[[1]])
+},{
+    peaks_small_mzpeak <- spectrum_peaks_v3(small_mzPeak[[1]])
+}, times = 5L, unit = "s")
+
+```
+
 Read the Centroid spectrum of all Speactra of the mzPeak (`Spectra_peaks.parquet`)
 
 ```{r}
 microbenchmark({
     peaks_small_mzpeak <- spectrum_peaks(small_mzPeak)
+},{
+    peaks_small_mzpeak <- spectrum_peaks_v2(small_mzPeak)
+},{
+    peaks_small_mzpeak <- spectrum_peaks_v3(small_mzPeak)
 }, times = 5L, unit = "s")
 
 ```
@@ -173,6 +220,8 @@ Read minimal metadata of all Spectra of the mzPeak based on iterator
 ```{r}
 microbenchmark({
     desc_min_mid_mzpeak <- spectrum_metadata(mid_mzPeak, minimal = TRUE)
+},{
+    desc_min_mid_mzpeak_v2 <- spectrum_metadata_v2(mid_mzPeak, minimal = TRUE)
 }, times = 5L, unit = "s")
 
 ```
@@ -181,7 +230,9 @@ Read the metadata of all Spectra of the mzPeak based on iterator
 
 ```{r}
 microbenchmark({
-    desc_mid_mzpeak_iter <- spectrum_metadata(mid_mzPeak, minimal = FALSE)
+    desc_mid_mzpeak <- spectrum_metadata(mid_mzPeak, minimal = FALSE)
+},{
+    desc_mid_mzpeak_v2 <- spectrum_metadata_v2(mid_mzPeak, minimal = FALSE)
 }, times = 5L, unit = "s")
 
 ```
@@ -207,11 +258,29 @@ microbenchmark({
 ```
 
 Read the Centroid spectrum of all Speactra of the mzPeak (`Spectra_peaks.parquet`)
+Read 1 single file
+
+```{r}
+microbenchmark({
+    peaks_mid_mzpeak <- spectrum_peaks(mid_mzPeak[[1]])
+}, {
+    peaks_mid_mzpeak <- spectrum_peaks_v2(mid_mzPeak[[1]])
+},{
+    peaks_mid_mzpeak <- spectrum_peaks_v3(mid_mzPeak[[1]])
+}, times = 5L, unit = "s")
+
+```
+
+Read the Centroid spectrum of all Speactra of the mzPeak (`Spectra_peaks.parquet`)
 Read multithread with iterator
 
 ```{r}
 microbenchmark({
     peaks_mid_mzpeak <- spectrum_peaks(mid_mzPeak)
+}, {
+    peaks_mid_mzpeak <- spectrum_peaks_v2(mid_mzPeak)
+},{
+    peaks_mid_mzpeak <- spectrum_peaks_v3(mid_mzPeak)
 }, times = 5L, unit = "s")
 
 ```
@@ -230,7 +299,7 @@ The files are converted to mzPeak with the convertor in
 
 Metadata
 
-```{r}
+```{r, eval = FALSE}
 midbig_mzml <- list.files(paste0(baseDir, "big_data_files"), pattern = "mzML",
                         full.names = TRUE)
 microbenchmark({
@@ -254,7 +323,7 @@ microbenchmark({
 
 Load only spectrum index of the mzPeak archive
 
-```{r}
+```{r, eval = FALSE}
 midbig_mzPeak <- list.files(paste0(baseDir, "big_data_files"),
                             pattern = ".mzPeak", full.names = TRUE)
 
@@ -266,18 +335,18 @@ microbenchmark({
 
 Read minimal metadata of all Spectra of the mzPeak based on iterator
 
-```{r}
+```{r, eval = FALSE}
 microbenchmark({
-    desc_min_midbig_mzpeak <- spectrum_metadata(midbig_mzPeak, minimal = TRUE)
+    desc_min_midbig_mzpeak <- spectrum_metadata_v2(midbig_mzPeak, minimal = TRUE)
 }, times = 1L, unit = "s")
 
 ```
 
 Read the metadata of all Spectra of the mzPeak based on iterator
 
-```{r}
+```{r, eval = FALSE}
 microbenchmark({
-    desc_midbig_mzpeak_iter <- spectrum_metadata(midbig_mzPeak, minimal = FALSE)
+    desc_midbig_mzpeak_iter <- spectrum_metadata_v2(midbig_mzPeak, minimal = FALSE)
 }, times = 1L, unit = "s")
 
 ```
@@ -285,7 +354,7 @@ microbenchmark({
 Read the Centroid spectrum of 1 Speactra of the mzPeak (`Spectra_peaks.parquet`)
 using `get_spectra_batch()`
 
-```{r}
+```{r, eval = FALSE}
 microbenchmark({
     peaks_midbig_mzpeak_filt_1 <- lapply(midbig_mzPeak, spectrum_peaks_by_id, index = 1L)
 }, times = 1L, unit = "s")
@@ -295,7 +364,7 @@ microbenchmark({
 Read the Centroid spectrum of 100 Speactra of the mzPeak (`Spectra_peaks.parquet`)
 using `get_spectra_batch()`
 
-```{r}
+```{r, eval = FALSE}
 microbenchmark({
     peaks_midbig_mzpeak_filt_10 <- lapply(midbig_mzPeak, spectrum_peaks_by_id, index = 1:100)
 }, times = 1L, unit = "s")
@@ -305,7 +374,7 @@ microbenchmark({
 Read the Centroid spectrum of all Speactra of the mzPeak (`Spectra_peaks.parquet`)
 Read multithread with iterator
 
-```{r}
+```{r, eval = FALSE}
 microbenchmark({
     peaks_midbig_mzpeak <- spectrum_peaks(midbig_mzPeak)
 }, times = 1L, unit = "s")

@@ -14,13 +14,15 @@ name = 'document'
 path = 'document.rs'
 
 [dependencies]
-extendr-api = '*'
+extendr-api = "0.8.2"
 mzdata = "0.64.1"
 mzpeak_prototyping = { git = "https://github.com/HUPO-PSI/mzPeak.git" }
 parquet = { version = "57.0.0", features = ["encryption"] }
 rayon = "1"
 clap = "4.6.1"
 indexmap = "2.14.0"
+arrow = "57.3.1"
+arrow_extendr = "57.0.0"
 
 [profile.release]
 lto = true

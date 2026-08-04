@@ -56,12 +56,10 @@ convertToMzPeak <- function(path, pattern = ".mzML$|.mzml$",
     }
 }
 
-
-spectrum_metadata <- function(file){
-    if (!file.exists(file))
-        stop("File does not exist!")
-
-    sp_desc <- mzpeak_read_all_spectrum_metadata(file)
-    res <- unlist(sp_desc[[1]])
-
-}
+# spectrum_peaks_v3 <- function(files){
+#     res <- parallel::mclapply(files, function(f){
+#         r <- nanoarrow::convert_array_stream(mzpeak_read_all_peaks_v3(f))
+#         r[[1]]
+#     }, mc.cores = parallel::detectCores()-1)
+#     res
+# }
