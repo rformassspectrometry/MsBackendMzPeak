@@ -39,3 +39,6 @@ src/.cargo
 src/Makevars
 src/Makevars.win
 .vscode
+inst/script/mzml_vs_mzpeak_files
+inst/script/mzml_vs_mzpeak.html
+

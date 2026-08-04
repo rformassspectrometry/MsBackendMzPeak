@@ -29,7 +29,7 @@ The files are converted to mzPeak with the convertor in
 
 To convert the `mzML` files to `mzPeak` use th function
 
-```{r}
+```{r, eval = FALSE}
 convertToMzPeak(path = paste0(baseDir, "MTBLS1129"),
                 pattern = ".mzML$",
                 output_dir = paste0(baseDir, "MTBLS1129"))
